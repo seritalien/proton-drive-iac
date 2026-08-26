@@ -12,7 +12,7 @@ idempotente, avec surveillance et alerte intégrées.
 ## Démarrage rapide
 
 ```bash
-git clone <url-de-ce-repo> proton-drive-iac
+git clone https://github.com/seritalien/proton-drive-iac
 cd proton-drive-iac
 ./install.sh
 ```

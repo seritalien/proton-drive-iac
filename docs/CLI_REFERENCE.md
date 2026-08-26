@@ -76,6 +76,19 @@ motif de recherche plutôt que du texte littéral (constaté en pratique,
 non documenté officiellement). Contournement : renommer localement le
 fichier/dossier concerné (retirer les crochets) avant de synchroniser.
 
+## Piège connu : faux positifs de validation MIME côté serveur
+
+Certains fichiers parfaitement valides (JPEG, JS...) sont rejetés à
+l'upload avec `ValidationError: The mime type of the file is invalid`,
+détectant un type absurde (`application/x-dosexec`, `application/marc`...)
+pour un fichier normal — bug de détection côté serveur Proton, pas un
+problème du fichier ni du script. Comme un fichier concerné échouera à
+chaque synchronisation, `20-sync-bidirectional.sh` tient un registre des
+échecs déjà vus (`~/.local/state/proton-drive-known-failures`, un nom par
+ligne) : un échec déjà connu est loggé mais ne redéclenche plus l'alerte
+desktop — seul un échec **nouveau** alerte. Pour forcer une nouvelle
+tentative sur un fichier donné, retirez sa ligne de ce fichier.
+
 ## Vérifier l'authentification
 
 ```bash

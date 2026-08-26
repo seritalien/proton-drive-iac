@@ -21,6 +21,13 @@
 #     un tout — on descend récursivement, ce qui coûte un appel CLI de plus
 #     par niveau traversé. N'affecte que les branches qui contiennent une
 #     exclusion, le reste de l'arbre garde le batching en un seul appel.
+#   - Faux positifs de validation MIME côté serveur Proton : certains
+#     fichiers parfaitement valides (JPEG, JS...) sont rejetés à l'upload
+#     avec un mime type absurde détecté ("application/x-dosexec",
+#     "application/marc"...) — bug serveur, pas réparable côté client.
+#     Comme ces fichiers échoueraient à CHAQUE sync indéfiniment, un échec
+#     déjà vu (KNOWN_FAILURES_FILE) n'est plus alerté une deuxième fois —
+#     seul un échec NOUVEAU déclenche l'alerte desktop.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 # shellcheck source=../lib.sh
@@ -30,7 +37,9 @@ set -e
 LOCAL_ROOT="$HOME/ProtonDrive"
 PROTON_CLOUD_ROOT="/my-files"
 LOG="$XDG_STATE_HOME/proton-drive-cli-sync.log"
+KNOWN_FAILURES_FILE="$XDG_STATE_HOME/proton-drive-known-failures"
 mkdir -p "$XDG_STATE_HOME" "$LOCAL_ROOT"
+touch "$KNOWN_FAILURES_FILE"
 load_sync_excludes
 
 # Verrou tenu pour toute la durée du script (pull + push).
@@ -44,6 +53,44 @@ fi
 proton-drive filesystem list / &>/dev/null || die "non authentifié — lance cli/10-check-auth.sh"
 
 sync_exit_code=0
+
+# run_transfer CMD... — exécute `proton-drive CMD...`, affiche sa sortie
+# (pour le log), et ne renvoie un échec (return 1) QUE si un des éléments
+# en échec n'a jamais été vu avant. Un échec déjà connu (fichier rejeté à
+# chaque fois par le même bug de validation côté serveur) est loggé mais
+# ne fait plus remonter d'échec — évite l'alerte quotidienne répétée pour
+# la même cause déjà identifiée.
+run_transfer() {
+    local output status any_new=false failed_names name
+    output="$(proton-drive "$@" 2>&1)"
+    status=$?
+    echo "$output"
+
+    [ "$status" -eq 0 ] && return 0
+
+    failed_names="$(echo "$output" | awk '
+        /^  Failed: [0-9]+ items$/ { flag=1; next }
+        flag && /^  - / { print; next }
+        flag { flag=0 }
+    ' | sed -E 's/^  - ([^:]+):.*/\1/')"
+
+    # Échec sans section "Failed:" identifiable (erreur globale, pas un
+    # rejet par élément) : toujours un échec réel, jamais suppressible.
+    [ -z "$failed_names" ] && return 1
+
+    while IFS= read -r name; do
+        [ -z "$name" ] && continue
+        if grep -qxF "$name" "$KNOWN_FAILURES_FILE"; then
+            echo "(échec déjà connu, alerte non répétée: $name)"
+        else
+            echo "$name" >> "$KNOWN_FAILURES_FILE"
+            echo "NOUVEL échec (alerte): $name"
+            any_new=true
+        fi
+    done <<< "$failed_names"
+
+    [ "$any_new" = true ] && return 1 || return 0
+}
 
 # push_walk LOCAL_PATH REL CLOUD_PARENT
 # Envoie LOCAL_PATH sous CLOUD_PARENT. Si REL (ou LOCAL_PATH lui-même) est
@@ -69,7 +116,7 @@ push_walk() {
         return 0
     fi
 
-    if ! proton-drive filesystem upload -f skip -d merge "$local_path" "$cloud_parent"; then
+    if ! run_transfer filesystem upload -f skip -d merge "$local_path" "$cloud_parent"; then
         echo "AVERTISSEMENT: échec du push pour $local_path -> $cloud_parent"
         sync_exit_code=1
     fi
@@ -97,7 +144,7 @@ pull_walk() {
         return 0
     fi
 
-    if ! proton-drive filesystem download -f skip -d merge "$cloud_path" "$local_parent"; then
+    if ! run_transfer filesystem download -f skip -d merge "$cloud_path" "$local_parent"; then
         echo "AVERTISSEMENT: échec du pull pour $cloud_path -> $local_parent"
         sync_exit_code=1
     fi
@@ -126,7 +173,7 @@ pull_walk() {
             fi
         done
         if [ "${#clean_cloud_paths[@]}" -gt 0 ] \
-            && ! proton-drive filesystem download -f skip -d merge "${clean_cloud_paths[@]}" "$LOCAL_ROOT"; then
+            && ! run_transfer filesystem download -f skip -d merge "${clean_cloud_paths[@]}" "$LOCAL_ROOT"; then
             echo "AVERTISSEMENT: le pull batché a rencontré au moins une erreur (voir ci-dessus)"
             sync_exit_code=1
         fi
@@ -151,7 +198,7 @@ pull_walk() {
             fi
         done
         if [ "${#clean_local_paths[@]}" -gt 0 ] \
-            && ! proton-drive filesystem upload -f skip -d merge "${clean_local_paths[@]}" "$PROTON_CLOUD_ROOT"; then
+            && ! run_transfer filesystem upload -f skip -d merge "${clean_local_paths[@]}" "$PROTON_CLOUD_ROOT"; then
             echo "AVERTISSEMENT: le push batché a rencontré au moins une erreur (voir ci-dessus)"
             sync_exit_code=1
         fi
@@ -163,7 +210,7 @@ pull_walk() {
 } >> "$LOG" 2>&1
 
 if [ "$sync_exit_code" -ne 0 ]; then
-    log "sync terminé AVEC ERREURS — voir $LOG"
+    log "sync terminé AVEC ERREURS (nouvelles, jamais vues) — voir $LOG"
     exit 1
 fi
 log "sync bidirectionnel (ajouts uniquement, pas de merge de contenu modifié) terminé — voir $LOG"

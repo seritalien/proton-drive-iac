@@ -25,6 +25,15 @@ Si le montage natif n'est pas disponible au moment de l'installation
 (dépendance externe indisponible), un mode de repli prend le relais
 automatiquement — voir `docs/ARCHITECTURE.md`.
 
+## Versioning & changelog
+
+Ce dépôt suit [Conventional Commits](https://www.conventionalcommits.org/)
+(`feat:`, `fix:`, `chore:`, `docs:`...) et [SemVer](https://semver.org/).
+`CHANGELOG.md` et les tags de version sont générés automatiquement par
+[release-please](https://github.com/googleapis/release-please) à partir
+des messages de commit — aucune tenue manuelle. Version `0.x` : l'API/le
+comportement peuvent encore changer avant un premier `1.0.0`.
+
 ## Licence
 
 MIT — voir [`LICENSE`](LICENSE).

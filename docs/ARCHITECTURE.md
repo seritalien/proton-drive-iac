@@ -89,6 +89,22 @@ plusieurs chemins dans un seul appel plutôt que multiplier les processus
 (chaque invocation a un coût de démarrage fixe, réouverture de cache
 compris).
 
+**Exclusion de chemins** : un fichier optionnel (non versionné, propre à
+chaque machine) permet d'exclure certains dossiers/fichiers du sync, dans
+les deux sens. Un chemin exclu — ou un chemin dont un descendant est
+exclu — ne peut plus être transféré comme un tout : le script descend
+récursivement dans l'arborescence pour ne transférer que ce qui n'est
+pas concerné, ce qui coûte un appel CLI supplémentaire par niveau
+traversé sur les seules branches contenant une exclusion (le reste garde
+le batching en un seul appel). Voir `docs/CLI_REFERENCE.md`.
+
+**Alerte nominative** : `OnFailure=` étant partagé entre plusieurs units
+(mount, sync, health-check), systemd ne transmet pas nativement le nom de
+l'unit à l'origine de l'échec. Le script de notification interroge
+`systemctl --user --failed` pour l'identifier, plutôt que d'afficher un
+message générique qui pourrait induire en erreur sur ce qui a réellement
+cassé.
+
 ## Gestion des secrets
 
 Deux catégories de secrets entrent en jeu, traitées différemment :

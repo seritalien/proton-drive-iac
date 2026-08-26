@@ -7,6 +7,7 @@ idempotente, avec surveillance et alerte intégrées.
 - [`docs/FEATURES.md`](docs/FEATURES.md) — ce que fait le projet
 - [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) — installation et usage
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — choix techniques et limites connues
+- [`docs/CLI_REFERENCE.md`](docs/CLI_REFERENCE.md) — commandes manuelles et pièges du CLI officiel
 
 ## Démarrage rapide
 

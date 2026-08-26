@@ -21,12 +21,50 @@ RCLONE_REMOTE="protondrive"
 # en robustesse si une machine avec TPM est disponible un jour.
 CONFIG_PASS_FILE="$XDG_CONFIG_HOME/proton-drive/rclone-config-pass"
 
+# Liste optionnelle de chemins (relatifs à ~/ProtonDrive) à exclure du sync
+# CLI, un par ligne, lignes vides et commençant par # ignorées. Fichier
+# personnel — jamais dans ce dépôt (voir .gitignore).
+SYNC_EXCLUDE_FILE="$XDG_CONFIG_HOME/proton-drive/sync-exclude"
+
+# Charge SYNC_EXCLUDE_FILE dans le tableau global SYNC_EXCLUDES.
+load_sync_excludes() {
+    SYNC_EXCLUDES=()
+    [ -f "$SYNC_EXCLUDE_FILE" ] || return 0
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        case "$line" in \#*) continue ;; esac
+        SYNC_EXCLUDES+=("$line")
+    done < "$SYNC_EXCLUDE_FILE"
+}
+
+# $1 = chemin relatif à tester. Vrai si exactement exclu.
+is_sync_excluded() {
+    local rel="$1" ex
+    for ex in "${SYNC_EXCLUDES[@]}"; do
+        [ "$rel" = "$ex" ] && return 0
+    done
+    return 1
+}
+
+# $1 = chemin relatif à tester. Vrai si un de ses descendants est exclu
+# (donc ce chemin ne peut pas être transféré comme un tout — il faut
+# descendre récursivement dedans).
+has_excluded_descendant() {
+    local rel="$1" ex
+    for ex in "${SYNC_EXCLUDES[@]}"; do
+        case "$ex" in
+            "$rel"/*) return 0 ;;
+        esac
+    done
+    return 1
+}
+
 # Le CLI officiel proton-drive garde un cache SQLite local partagé entre
 # TOUTES ses invocations (~/.local/share/proton-drive-cli). Deux
 # invocations concurrentes → "SQLiteError: database is locked" (vérifié en
-# pratique, non documenté officiellement — le CLI ne supporte PAS
-# l'exécution parallèle). PROTON_CLI_LOCK sert de mutex : tout appel à
-# `proton-drive` dans ce repo doit passer par proton_drive_locked() ci-dessous.
+# pratique, non documenté officiellement — le CLI ne supporte PAS l'exécution
+# parallèle). PROTON_CLI_LOCK sert de mutex : tout appel à `proton-drive`
+# dans ce repo doit passer par proton_drive_locked() ci-dessous.
 PROTON_CLI_LOCK="$XDG_STATE_HOME/proton-drive-cli.lock"
 export PROTON_DRIVE_LOG_LEVEL="${PROTON_DRIVE_LOG_LEVEL:-WARNING}"
 

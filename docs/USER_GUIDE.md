@@ -60,6 +60,25 @@ jour). Vous pouvez aussi forcer une synchronisation immédiate :
 scripts/cli/20-sync-bidirectional.sh
 ```
 
+## Exclure un dossier ou fichier du sync (mode de repli)
+
+Créez (ou éditez) `~/.config/proton-drive/sync-exclude` — un chemin par
+ligne, relatif à `~/ProtonDrive`, lignes vides et commençant par `#`
+ignorées :
+
+```
+Documents/Confidentiel
+Documents/brouillon.docx
+```
+
+Ce fichier n'est jamais versionné (propre à chaque machine). Un chemin
+exclu — ou un chemin dont un descendant est exclu — n'est plus transféré
+dans aucun des deux sens au prochain sync. **Ça n'agit que sur les
+prochains passages** : un contenu déjà présent côté cloud avant
+l'exclusion n'est pas supprimé automatiquement — à faire vous-même si
+besoin (`proton-drive filesystem delete "/my-files/..."`, voir
+`docs/CLI_REFERENCE.md`).
+
 ## Que faire en cas de problème
 
 Une notification desktop apparaît automatiquement en cas d'échec. Pour

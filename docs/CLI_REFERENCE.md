@@ -68,6 +68,14 @@ proton-drive filesystem upload -f skip -d merge ~/ProtonDrive/Documents/nouveau.
 existe déjà côté cloud sous le même nom — voir `docs/ARCHITECTURE.md`
 pour les limites de cette résolution de conflit par nom.
 
+## Piège connu : crochets `[` `]` dans un nom de fichier/dossier
+
+Un chemin local contenant des crochets littéraux échoue à l'upload avec
+`No paths matched: <chemin>` — le CLI semble interpréter `[...]` comme un
+motif de recherche plutôt que du texte littéral (constaté en pratique,
+non documenté officiellement). Contournement : renommer localement le
+fichier/dossier concerné (retirer les crochets) avant de synchroniser.
+
 ## Vérifier l'authentification
 
 ```bash

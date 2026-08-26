@@ -5,6 +5,15 @@
 
 set -euo pipefail
 
+# ~/.local/bin (où rclone est installé, voir 10-install-dependencies.sh)
+# n'est pas garanti sur le PATH — vrai en particulier hors shell interactif
+# de login (vérifié en conteneur). Sourcé par tous les scripts du projet,
+# donc garanti systématiquement plutôt que dépendre du PATH ambiant.
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) export PATH="$HOME/.local/bin:$PATH" ;;
+esac
+
 RCLONE_MIN_VERSION="1.75.0"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"

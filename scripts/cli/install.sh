@@ -12,6 +12,8 @@ run() {
     bash "./$1"
 }
 
+run 00-install-cli.sh
+
 set +e
 bash ./10-check-auth.sh
 auth_status=$?
@@ -41,6 +43,6 @@ echo "════════════════════════�
 echo "  Sync initial terminé, timer quotidien actif (avec alerte"
 echo "  desktop en cas d'échec). Vérifie: systemctl --user list-timers | grep proton"
 echo
-echo "  Étape suivante (manuelle, une fois le sync vérifié complet):"
+echo "  Étape suivante (manuelle, une fois l'upload vérifié complet):"
 echo "  ../95-decommission-onedrive.sh"
 echo "═══════════════════════════════════════════════════════════════"

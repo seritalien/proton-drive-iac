@@ -51,8 +51,9 @@ install_rclone() {
 
     local installed
     installed="$("$RCLONE_INSTALL_DIR/rclone" version 2>/dev/null | head -1)"
-    command -v rclone &>/dev/null || die "$RCLONE_INSTALL_DIR n'est pas dans le PATH — ajoute-le à ton shell rc"
+    command -v rclone &>/dev/null || die "$RCLONE_INSTALL_DIR n'est pas dans le PATH (voir lib.sh, ça devrait pourtant être corrigé — vérifie ton shell)"
     log "rclone installé avec succès dans $RCLONE_INSTALL_DIR: $installed"
+    log "AVIS: pour utiliser 'rclone' manuellement hors de ce projet, ajoute $RCLONE_INSTALL_DIR à ton PATH dans ton shell rc (ex: ~/.bashrc)"
 }
 
 install_fuse() {
@@ -61,8 +62,19 @@ install_fuse() {
         return 0
     fi
     log "fuse3 absent — installation"
-    sudo apt-get update -qq
-    sudo apt-get install -y fuse3
+
+    # root (conteneur, certains serveurs) n'a pas forcément sudo installé.
+    local as_root=()
+    if [ "$(id -u)" -eq 0 ]; then
+        as_root=()
+    elif command -v sudo &>/dev/null; then
+        as_root=(sudo)
+    else
+        die "fuse3 absent et sudo introuvable — installe-le manuellement (apt-get install fuse3) puis relance"
+    fi
+
+    "${as_root[@]}" apt-get update -qq
+    "${as_root[@]}" apt-get install -y fuse3
     command -v fusermount3 &>/dev/null || die "installation de fuse3 échouée"
     log "fuse3 installé ($(fusermount3 --version 2>&1 | head -1))"
 }

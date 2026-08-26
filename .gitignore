@@ -1,0 +1,7 @@
+# Aucun secret ne doit jamais atterrir ici (défense en profondeur — en
+# temps normal rien de tout ça ne vit dans ce repo, tout est écrit dans
+# ~/.config ou ~/.local/state). Ciblé sur les données, pas les scripts
+# (un nom de script contenant "secret" ou "pass" est légitime).
+*.cred
+*.conf
+rclone.conf

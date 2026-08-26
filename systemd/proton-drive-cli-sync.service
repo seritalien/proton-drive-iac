@@ -1,0 +1,8 @@
+[Unit]
+Description=Proton Drive — sync bidirectionnel (pull+push) via le CLI officiel (repli, tant que le mount rclone est bloqué en amont)
+OnFailure=proton-drive-failure-notify.service
+
+[Service]
+Type=oneshot
+ExecStart=%h/git/proton-drive-iac/scripts/cli/20-sync-bidirectional.sh
+TimeoutStartSec=0

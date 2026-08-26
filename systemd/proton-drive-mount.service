@@ -1,0 +1,27 @@
+[Unit]
+Description=Proton Drive — montage FUSE natif via rclone
+After=network-online.target
+Wants=network-online.target
+AssertPathIsMountPoint=%h/ProtonDrive
+OnFailure=proton-drive-failure-notify.service
+
+[Service]
+Type=notify
+ExecStartPre=/usr/bin/mkdir -p %h/ProtonDrive
+ExecStart=/usr/bin/rclone mount protondrive: %h/ProtonDrive \
+  --password-command %h/git/proton-drive-iac/scripts/runtime/proton-drive-config-pass.sh \
+  --vfs-cache-mode full \
+  --vfs-cache-max-size 5G \
+  --vfs-cache-max-age 72h \
+  --dir-cache-time 1h \
+  --poll-interval 1m \
+  --log-level INFO \
+  --log-file %h/.local/state/rclone-protondrive.log
+ExecStop=/bin/fusermount3 -u %h/ProtonDrive
+Restart=on-failure
+RestartSec=10
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Install]
+WantedBy=default.target

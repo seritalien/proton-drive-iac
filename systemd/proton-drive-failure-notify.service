@@ -1,0 +1,6 @@
+[Unit]
+Description=Notification d'échec du montage Proton Drive
+
+[Service]
+Type=oneshot
+ExecStart=%h/git/proton-drive-iac/scripts/runtime/proton-drive-notify-failure.sh

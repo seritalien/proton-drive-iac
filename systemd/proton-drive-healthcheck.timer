@@ -1,0 +1,10 @@
+[Unit]
+Description=Health-check périodique Proton Drive
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

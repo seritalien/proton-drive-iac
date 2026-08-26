@@ -1,0 +1,6 @@
+[Unit]
+Description=Health-check du montage Proton Drive
+
+[Service]
+Type=oneshot
+ExecStart=%h/git/proton-drive-iac/scripts/runtime/proton-drive-healthcheck.sh
